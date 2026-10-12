@@ -16,7 +16,7 @@ public static class UpdateService
 {
     public const string Repo = "microkbcrt/Windows-ScreenTime";
     private const string ReleasesApi = "https://api.github.com/repos/" + Repo + "/releases/latest";
-    private const string AssetPrefix = "Windows屏幕使用时间_Setup";
+    private const string AssetPrefix = "Windows-ScreenTime_Setup";
 
     /// <summary>更新流程末尾由宿主设置：退出当前进程（安装器会重新拉起新版本）。</summary>
     public static Action? ExitHost;

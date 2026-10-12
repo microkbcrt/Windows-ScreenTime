@@ -58,6 +58,10 @@ Copy-Item src/ScreenTime.App/wwwroot/* installer/publish/wwwroot -Recurse -Force
 # 编译安装包（需 Inno Setup 6：winget install JRSoftware.InnoSetup）
 & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" installer\setup.iss
 # 产物：dist\Windows屏幕使用时间_Setup_<版本>.exe
+
+# 发版：GitHub Release（标签 vX.Y.Z，附上 Setup exe；文件名必须为 ASCII：Windows-ScreenTime_Setup_X.Y.Z.exe，中文文件名经 gh 上传会被破坏）
+# gh release create vX.Y.Z "dist\Windows-ScreenTime_Setup_X.Y.Z.exe" --title "Windows屏幕使用时间 vX.Y.Z" --notes-file <说明文件>
+# 注意：若 git push 被网络阻断，可用 GitHub API 建树提交（blob→tree→commit→PATCH refs/heads/main）
 ```
 
 ## 更新日志
