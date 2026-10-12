@@ -45,8 +45,19 @@ window.chrome.webview.addEventListener("message", (e) => {
   const r = _pend.get(m.id);
   if (r) { _pend.delete(m.id); r(m.data); }
 });
+function reportError(err, at) {
+  try {
+    window.chrome.webview.postMessage({
+      id: 0, name: "jserror",
+      args: { msg: String((err && err.message) || err), at: String(at || "") },
+    });
+  } catch (_) {}
+}
 window.addEventListener("error", (e) => {
-  try { window.chrome.webview.postMessage({ id: 0, name: "jserror", args: { msg: String(e.message), at: String(e.filename) + ":" + e.lineno } }); } catch (_) {}
+  reportError(e.message, (e.filename || "") + ":" + e.lineno);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  reportError(e.reason, "promise");
 });
 
 /* ---------- 自更新 ---------- */
@@ -123,7 +134,7 @@ async function loadAll() {
     if (currentView === "apps") await loadApps();
     if (currentView === "settings") await loadSettings();
     if (detailApp) await loadDetail(detailApp);
-  } catch (err) { console.error(err); }
+  } catch (err) { reportError(err, "loadAll:" + currentView); }
 }
 
 async function loadLive() {

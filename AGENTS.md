@@ -1,7 +1,7 @@
 # Windows屏幕使用时间
 
 > 对标手机端「屏幕使用时间」的 Windows 桌面软件
-> 作者：**kbcrt**　|　当前版本：**1.4.0**　|　技术栈：C# .NET 8 + WPF + WebView2 + SQLite
+> 作者：**kbcrt**　|　当前版本：**1.4.1**　|　技术栈：C# .NET 8 + WPF + WebView2 + SQLite
 > 开源仓库：https://github.com/microkbcrt/Windows-ScreenTime
 
 ## 项目信息
@@ -66,6 +66,7 @@ Copy-Item src/ScreenTime.App/wwwroot/* installer/publish/wwwroot -Recurse -Force
 
 ## 更新日志
 
+- 1.4.1 (2026-10-12): 修复升级后 WebView2 缓存旧版前端脚本导致界面异常的问题（启动时清除磁盘缓存）；前端 Promise 异常上报日志，不再静默失败。
 - 1.4.0 (2026-10-12): 支持自定义新建分类（应用详情弹窗与设置页均可新建，自动配色，设置页可管理删除，删除后相关应用回退为自动分类）。
 - 1.3.0 (2026-10-12): 设置页新增「打开数据文件夹」按钮（资源管理器定位到数据库文件）。
 - 1.2.0 (2026-10-12): 新增应用内自更新（启动时检查 GitHub Releases 最新版，发现新版弹窗提示，一键下载带进度并静默原地升级、自动重启，无需用户手动操作；设置页可手动检查更新）；项目发布至 GitHub 并接入 Releases 发版。
