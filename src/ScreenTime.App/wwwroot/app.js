@@ -200,7 +200,7 @@ function renderRank(container, rows, total) {
   const max = Math.max(...rows.map(r => r.seconds), 1);
   container.innerHTML = rows.map((r, i) => `
     <div class="rank-item" data-app="${esc(r.app)}">
-      <div class="rank-icon" style="background:${iconColor(r.name)}">${esc(shortName(r.name))}</div>
+      <div class="rank-icon" data-icon-app="${esc(r.app)}" style="background:${iconColor(r.name)}">${esc(shortName(r.name))}</div>
       <div class="rank-main">
         <div class="rank-top">
           <span class="rank-name">${i + 1}. ${esc(r.name)}</span>
@@ -211,6 +211,7 @@ function renderRank(container, rows, total) {
     </div>`).join("");
   container.querySelectorAll(".rank-item").forEach(el =>
     el.addEventListener("click", () => openDetail(el.dataset.app)));
+  requestIcons(container);
 }
 
 async function loadApps() {
@@ -224,7 +225,7 @@ async function loadApps() {
   tbody.innerHTML = d.rows.map(r => `
     <tr>
       <td><div class="app-cell">
-        <div class="rank-icon" style="background:${iconColor(r.name)}">${esc(shortName(r.name))}</div>${esc(r.name)}</div></td>
+        <div class="rank-icon" data-icon-app="${esc(r.app)}" style="background:${iconColor(r.name)}">${esc(shortName(r.name))}</div>${esc(r.name)}</div></td>
       <td><span class="cat-tag" style="color:${catColor(r.category)}">${esc(r.category)}</span></td>
       <td><b>${fmtDur(r.seconds)}</b></td>
       <td><div class="pct-track"><div class="pct-fill" style="width:${Math.max(2, r.seconds / max * 100)}%"></div></div>
@@ -233,6 +234,30 @@ async function loadApps() {
     </tr>`).join("");
   tbody.querySelectorAll("a.link").forEach(el =>
     el.addEventListener("click", () => openDetail(el.dataset.app)));
+  requestIcons(tbody);
+}
+
+/* ---------- 应用图标 ---------- */
+const iconCache = {};
+const iconRequested = new Set();
+function requestIcons(container) {
+  container.querySelectorAll("[data-icon-app]").forEach(el => {
+    const key = el.dataset.iconApp;
+    if (iconCache[key]) { applyIcon(el, iconCache[key]); return; }
+    if (iconRequested.has(key)) return;
+    iconRequested.add(key);
+    rpc("appicon", { app: key }).then(r => {
+      if (r && r.dataUrl) {
+        iconCache[key] = r.dataUrl;
+        document.querySelectorAll(`[data-icon-app="${key.replace(/"/g, '\\"')}"]`)
+          .forEach(el2 => applyIcon(el2, r.dataUrl));
+      }
+    }).catch(() => {});
+  });
+}
+function applyIcon(el, dataUrl) {
+  el.style.background = `#F2F2F5 center/70% no-repeat url("${dataUrl}")`;
+  el.textContent = "";
 }
 
 async function loadSettings() {
