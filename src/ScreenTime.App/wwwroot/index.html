@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>屏幕使用时间</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside id="nav">
+    <div class="logo">
+      <div class="logo-icon">⏱</div>
+      <div class="logo-text">屏幕使用时间</div>
+    </div>
+    <nav>
+      <a data-view="dashboard" class="active"><span class="ico">📊</span>今日概览</a>
+      <a data-view="apps"><span class="ico">📱</span>应用统计</a>
+      <a data-view="settings"><span class="ico">⚙️</span>设置</a>
+    </nav>
+    <div id="live-bar">
+      <span id="live-dot" class="dot on"></span>
+      <div>
+        <div id="live-app">—</div>
+        <div id="live-title">正在监测</div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- 今日概览 -->
+    <section id="view-dashboard">
+      <div class="cards">
+        <div class="card big">
+          <div class="label">今日屏幕使用时间</div>
+          <div id="total" class="huge">0 分钟</div>
+          <div id="delta" class="sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">拿起次数</div>
+          <div id="pickups" class="big-num">0</div>
+          <div class="sub">解锁 / 亮屏</div>
+        </div>
+        <div class="card">
+          <div class="label">本周总时长</div>
+          <div id="week" class="big-num">0 分钟</div>
+          <div class="sub">周一起累计</div>
+        </div>
+        <div class="card">
+          <div class="label">最常用应用</div>
+          <div id="topapp" class="big-num small-text">—</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card chart">
+          <div class="card-title">24 小时分布</div>
+          <div id="hourly" class="chart-box"></div>
+        </div>
+        <div class="card chart">
+          <div class="card-title">应用排行（今日）</div>
+          <div id="rank" class="rank-list"></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card chart">
+          <div class="card-title">近 7 天趋势</div>
+          <div id="trend" class="chart-box"></div>
+        </div>
+        <div class="card chart">
+          <div class="card-title">分类占比</div>
+          <div id="cat" class="chart-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 应用统计 -->
+    <section id="view-apps" hidden>
+      <div class="range-tabs">
+        <button data-range="day" class="active">今日</button>
+        <button data-range="week">本周</button>
+        <button data-range="month">本月</button>
+      </div>
+      <div class="card table-card">
+        <table id="apps-table">
+          <thead><tr><th style="width:34%">应用</th><th>分类</th><th>时长</th><th style="width:26%">占比</th><th>限额</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section id="view-settings" hidden>
+      <div class="card set-card">
+        <div class="card-title">常规</div>
+        <div class="set-row">
+          <div>
+            <div class="set-name">离开判定阈值</div>
+            <div class="sub">键鼠无操作超过该时间即停止计时</div>
+          </div>
+          <select id="idle-select">
+            <option value="30">30 秒</option>
+            <option value="60" selected>60 秒</option>
+            <option value="120">2 分钟</option>
+            <option value="300">5 分钟</option>
+          </select>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-name">开机自动启动</div>
+            <div class="sub">登录 Windows 后自动开始记录</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="autostart"><span class="slider"></span></label>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-name">数据备份</div>
+            <div class="sub">导出全部数据为备份文件，或从备份恢复（恢复后应用自动重启）</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn ghost" id="exportdata-btn">导出数据</button>
+            <button class="btn" id="importdata-btn">导入数据</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-name">导出数据</div>
+            <div class="sub">最近 30 天明细导出为 CSV（桌面）</div>
+          </div>
+          <button class="btn" id="export-btn">导出 CSV</button>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-name">数据位置</div>
+            <div class="sub" id="datadir">—</div>
+          </div>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-name">关于</div>
+            <div class="sub" id="about">—</div>
+          </div>
+          <button class="btn ghost" id="check-update-btn">检查更新</button>
+        </div>
+      </div>
+      <div class="card set-card">
+        <div class="card-title">应用限额（每日）</div>
+        <div class="set-row">
+          <select id="limit-app"><option value="">选择应用…</option></select>
+          <input id="limit-minutes" type="number" min="1" max="1440" placeholder="分钟">
+          <button class="btn" id="limit-add">设置限额</button>
+        </div>
+        <table id="limits-table">
+          <thead><tr><th>应用</th><th>每日限额</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- 应用详情弹窗 -->
+  <div id="modal" hidden>
+    <div id="modal-box">
+      <div class="modal-head">
+        <div>
+          <div id="md-name" class="md-title">—</div>
+          <select id="md-cat-select" style="margin-top:6px"></select>
+        </div>
+        <button id="md-close" class="btn ghost">关闭</button>
+      </div>
+      <div id="md-trend" class="chart-box tall"></div>
+      <div class="card-title" style="margin-top:14px">今日访问的网站</div>
+      <div id="md-sites" class="rank-list"></div>
+      <div class="set-row" style="margin-top:10px;border-top:1px solid #eee;padding-top:12px">
+        <div class="set-name">每日限额（分钟，0 为取消）</div>
+        <input id="md-limit" type="number" min="0" max="1440" style="width:90px">
+        <button class="btn" id="md-limit-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 更新弹窗 -->
+  <div id="update-modal" hidden>
+    <div id="update-box">
+      <div class="md-title">发现新版本 <span id="upd-ver" style="color:var(--accent)"></span></div>
+      <div id="upd-notes" class="sub" style="white-space:pre-wrap;max-height:180px;overflow:auto;margin-top:10px;line-height:1.7"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+        <button class="btn ghost" id="upd-later">以后再说</button>
+        <button class="btn" id="upd-go">立即更新</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 更新进度（右下角悬浮） -->
+  <div id="update-progress" hidden>
+    <div class="card" style="width:320px">
+      <div class="card-title">正在更新 <span id="upd-pct" style="color:var(--accent)"></span></div>
+      <div class="pct-track" style="margin-top:10px"><div id="upd-bar" class="pct-fill" style="width:0%"></div></div>
+      <div class="sub" id="upd-status">下载完成后将自动安装并重启应用</div>
+    </div>
+  </div>
+
+  <script src="echarts.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
