@@ -8,7 +8,6 @@
 
 [Setup]
 AppId={{6A2E1D4C-9B3F-4E8A-8C7D-1F2B3A4C5D6E}
-AppMutex=Local\ScreenTimeApp.SingleInstance
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
