@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using ScreenTime.Core;
@@ -32,9 +35,51 @@ internal static class QueryService
         "doupdate" => DoUpdate(),
         "opendata" => OpenData(),
         "live" => Live(),
+        "appicon" => AppIcon(args),
         "jserror" => JsError(args),
         _ => null,
     };
+
+    private static readonly ConcurrentDictionary<string, string?> IconMemoryCache = new();
+
+    /// <summary>提取应用 exe 图标，返回 data URL（提取失败返回 null，前端回退字母图标）。带磁盘与内存缓存。</summary>
+    private static object AppIcon(JsonElement args)
+    {
+        var app = args.GetProperty("app").GetString() ?? "";
+        var dataUrl = IconMemoryCache.GetOrAdd(app, LoadIconDataUrl);
+        return dataUrl is null ? new { ok = false } : new { ok = true, dataUrl };
+    }
+
+    private static string? LoadIconDataUrl(string appKey)
+    {
+        try
+        {
+            if (appKey.StartsWith("pid:", StringComparison.Ordinal) || !File.Exists(appKey)) return null;
+
+            var cacheDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ScreenTime", "icons");
+            Directory.CreateDirectory(cacheDir);
+            var hash = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(appKey)));
+            var cacheFile = Path.Combine(cacheDir, hash + ".png");
+
+            if (!File.Exists(cacheFile))
+            {
+                using var icon = System.Drawing.Icon.ExtractAssociatedIcon(appKey);
+                if (icon is null) return null;
+                using var bmp = icon.ToBitmap();
+                using var ms = new MemoryStream();
+                bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                File.WriteAllBytes(cacheFile, ms.ToArray());
+            }
+            return "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes(cacheFile));
+        }
+        catch (Exception ex)
+        {
+            Log.Write("图标提取失败 " + appKey + ": " + ex.Message);
+            return null;
+        }
+    }
 
     static QueryService()
     {
