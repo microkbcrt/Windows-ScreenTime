@@ -21,6 +21,8 @@ if (args.Length > 0 && args[0] == "summary")
             Console.WriteLine($"  {Path.GetFileName(kv.Key),-10} {s.Item1,-30} {s.Item2 / 60.0,6:F1} 分钟");
     }
     Console.WriteLine($"总屏幕时间: {db2.GetTotalSeconds(today) / 60.0:F1} 分钟    拿起次数: {db2.GetPickups(today)}");
+    var rangeTest = db2.GetAppTotalsRange(today, today);
+    Console.WriteLine($"区间查询测试: {rangeTest.Count} 个应用, 合计 {rangeTest.Values.Sum() / 60.0:F1} 分钟");
     Console.WriteLine("最近事件:");
     foreach (var (ts, type) in db2.GetEvents(today).TakeLast(15))
         Console.WriteLine($"  {DateTimeOffset.FromUnixTimeSeconds(ts).ToLocalTime():T}  {type}");

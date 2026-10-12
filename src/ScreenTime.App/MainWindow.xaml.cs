@@ -41,6 +41,16 @@ public partial class MainWindow : Window
                     "ScreenTime", "WebView2"));
             await Web.EnsureCoreWebView2Async(env);
 
+        // 清除磁盘缓存：升级后必须加载新版前端文件，避免 file:// 资源被缓存
+        try
+        {
+            await Web.CoreWebView2.Profile.ClearBrowsingDataAsync(CoreWebView2BrowsingDataKinds.DiskCache);
+        }
+        catch (Exception ex)
+        {
+            Log.Write("清除缓存失败: " + ex.Message);
+        }
+
         Web.CoreWebView2.WebMessageReceived += OnWebMessage;
         var index = Path.Combine(folder, "index.html");
         Web.CoreWebView2.Navigate(new Uri(index).AbsoluteUri);
