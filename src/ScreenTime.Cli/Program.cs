@@ -56,6 +56,7 @@ if (args.Length > 0 && args[0] == "sitetest")
 // updatetest 模式：走一遍真实的「检查更新 → 下载 → 静默安装」流程
 if (args.Length > 0 && args[0] == "updatetest")
 {
+    UsageTracker.Logger = m => Console.WriteLine("[log] " + m);
     Console.WriteLine("检查更新…");
     var info = await UpdateService.CheckAsync();
     Console.WriteLine($"最新版本: {info.Latest}    有更新: {info.HasUpdate}");
@@ -64,7 +65,7 @@ if (args.Length > 0 && args[0] == "updatetest")
     {
         UpdateService.DownloadProgress += p => Console.Write($"\r下载进度: {p}%   ");
         UpdateService.Finished += ok => Console.WriteLine($"\r安装程序已启动 (成功={ok})          ");
-        await UpdateService.DownloadAndInstallAsync(info.Url);
+        await UpdateService.DownloadAndInstallAsync(info.Url, info.AssetId);
     }
     return;
 }

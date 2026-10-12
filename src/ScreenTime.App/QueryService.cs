@@ -65,7 +65,7 @@ internal static class QueryService
             {
                 var info = await UpdateService.CheckAsync();
                 if (info.HasUpdate && info.Url is not null)
-                    await UpdateService.DownloadAndInstallAsync(info.Url);
+                    await UpdateService.DownloadAndInstallAsync(info.Url, info.AssetId);
                 else
                     App.PushToFrontend(new { type = "update-finished", ok = false });
             }
