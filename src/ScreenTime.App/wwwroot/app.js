@@ -68,6 +68,9 @@ document.getElementById("upd-go").addEventListener("click", async () => {
 document.getElementById("check-update-btn").addEventListener("click", () => {
   rpc("checkupdate");
 });
+document.getElementById("opendata-btn").addEventListener("click", () => {
+  rpc("opendata");
+});
 
 /* ---------- 工具 ---------- */
 function fmtDur(sec) {

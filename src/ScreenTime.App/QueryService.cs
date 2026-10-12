@@ -27,6 +27,7 @@ internal static class QueryService
         "restart" => Restart(),
         "checkupdate" => CheckUpdate(),
         "doupdate" => DoUpdate(),
+        "opendata" => OpenData(),
         "live" => Live(),
         "jserror" => JsError(args),
         _ => null,
@@ -337,6 +338,20 @@ internal static class QueryService
         catch
         {
             return false;
+        }
+    }
+
+    private static object OpenData()
+    {
+        try
+        {
+            var dbPath = Database.DefaultPath();
+            System.Diagnostics.Process.Start("explorer.exe", "/select,\"" + dbPath + "\"");
+            return new { ok = true };
+        }
+        catch (Exception ex)
+        {
+            return new { ok = false, error = ex.Message };
         }
     }
 
