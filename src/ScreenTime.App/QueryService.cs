@@ -16,6 +16,9 @@ internal static class QueryService
         "apps" => Apps(RangeOf(args)),
         "appdetail" => AppDetail(args.GetProperty("app").GetString() ?? ""),
         "setcategory" => SetCategory(args),
+        "categories" => Categories(),
+        "addcategory" => AddCategory(args),
+        "delcategory" => DeleteCategory(args),
         "settings" => Settings(),
         "setlimit" => SetLimit(args),
         "setidle" => SetIdle(args),
@@ -192,12 +195,53 @@ internal static class QueryService
         };
     }
 
+    private static readonly string[] NewCategoryPalette =
+    {
+        "#BF5AF2", "#FF2D55", "#5AC8FA", "#FFCC00", "#34C759",
+        "#FF9500", "#5856D6", "#FF6B22", "#00C7BE", "#A2845E",
+    };
+
+    private static object Categories()
+    {
+        var custom = App.Db.GetCustomCategories()
+            .Select(c => new { name = c.Name, color = c.Color }).ToList();
+        return new { builtin = Categorizer.Categories, custom };
+    }
+
+    private static object AddCategory(JsonElement args)
+    {
+        var name = (args.GetProperty("name").GetString() ?? "").Trim();
+        if (name.Length == 0) return new { ok = false, error = "分类名称不能为空" };
+        if (name.Length > 12) return new { ok = false, error = "分类名称不能超过 12 个字" };
+        if (Categorizer.Categories.Contains(name)) return new { ok = false, error = "与内置分类重名" };
+        if (App.Db.GetCustomCategories().Any(c => c.Name == name)) return new { ok = false, error = "分类已存在" };
+        var color = NewCategoryPalette[App.Db.GetCustomCategories().Count % NewCategoryPalette.Length];
+        App.Db.AddCategory(name, color);
+        return new { ok = true, name, color };
+    }
+
+    private static object DeleteCategory(JsonElement args)
+    {
+        var name = args.GetProperty("name").GetString() ?? "";
+        App.Db.DeleteCategory(name);
+        // 清除指向该分类的应用自定义设置，回退为自动识别
+        foreach (var app in App.Db.GetAppCategories().Where(kv => kv.Value == name).Select(kv => kv.Key).ToList())
+            App.Db.SetAppCategory(app, null);
+        Categorizer.SetOverrides(App.Db.GetAppCategories());
+        return new { ok = true };
+    }
+
     private static object SetCategory(JsonElement args)
     {
         var app = args.GetProperty("app").GetString() ?? "";
         var category = args.TryGetProperty("category", out var c) ? c.GetString() : null;
         if (string.IsNullOrWhiteSpace(category) || category == "自动") category = null;
-        else if (!Categorizer.Categories.Contains(category)) return new { ok = false, error = "未知分类" };
+        else
+        {
+            var valid = Categorizer.Categories.Contains(category) ||
+                        App.Db.GetCustomCategories().Any(x => x.Name == category);
+            if (!valid) return new { ok = false, error = "未知分类" };
+        }
         App.Db.SetAppCategory(app, category);
         Categorizer.SetOverride(app, category);
         return new { ok = true, category };

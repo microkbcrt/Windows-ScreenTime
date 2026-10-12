@@ -91,6 +91,14 @@
     <!-- 设置 -->
     <section id="view-settings" hidden>
       <div class="card set-card">
+        <div class="card-title">自定义分类</div>
+        <div class="set-row">
+          <input id="new-cat-name" placeholder="新分类名称（如：学习、理财）" maxlength="12" style="flex:1">
+          <button class="btn" id="add-cat-btn">新建</button>
+        </div>
+        <div id="cats-list" class="rank-list" style="max-height:none"></div>
+      </div>
+      <div class="card set-card">
         <div class="card-title">常规</div>
         <div class="set-row">
           <div>
@@ -167,6 +175,10 @@
           <select id="md-cat-select" style="margin-top:6px"></select>
         </div>
         <button id="md-close" class="btn ghost">关闭</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <input id="md-newcat" placeholder="新建分类名称（如：学习）" maxlength="12" style="flex:1">
+        <button class="btn ghost" id="md-addcat">新建并应用</button>
       </div>
       <div id="md-trend" class="chart-box tall"></div>
       <div class="card-title" style="margin-top:14px">今日访问的网站</div>

@@ -57,6 +57,7 @@ public sealed class Database : IDisposable
             CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
             CREATE TABLE IF NOT EXISTS app_names(app TEXT PRIMARY KEY, name TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS app_categories(app TEXT PRIMARY KEY, category TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS categories(name TEXT PRIMARY KEY, color TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS limits(app TEXT PRIMARY KEY, minutes INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
             """);
@@ -281,6 +282,46 @@ public sealed class Database : IDisposable
             while (reader.Read())
                 result[reader.GetString(0)] = reader.GetString(1);
             return result;
+        }
+    }
+
+    public List<(string Name, string Color)> GetCustomCategories()
+    {
+        lock (_gate)
+        {
+            var list = new List<(string, string)>();
+            using var cmd = _conn.CreateCommand();
+            cmd.CommandText = "SELECT name, color FROM categories ORDER BY rowid";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add((reader.GetString(0), reader.GetString(1)));
+            return list;
+        }
+    }
+
+    public void AddCategory(string name, string color)
+    {
+        lock (_gate)
+        {
+            using var cmd = _conn.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO categories(name, color) VALUES($n, $c)
+                ON CONFLICT(name) DO UPDATE SET color = $c
+                """;
+            cmd.Parameters.AddWithValue("$n", name);
+            cmd.Parameters.AddWithValue("$c", color);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public void DeleteCategory(string name)
+    {
+        lock (_gate)
+        {
+            using var cmd = _conn.CreateCommand();
+            cmd.CommandText = "DELETE FROM categories WHERE name=$n";
+            cmd.Parameters.AddWithValue("$n", name);
+            cmd.ExecuteNonQuery();
         }
     }
 
