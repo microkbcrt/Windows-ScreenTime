@@ -85,8 +85,12 @@ const CAT_COLORS = {
   "办公": "#30D158", "开发": "#5E5CE6", "浏览器": "#64D2FF",
   "系统": "#8E8E93", "其他": "#C7C7CC",
 };
-const PALETTE = ["#0A84FF", "#FF9F0A", "#FF375F", "#30D158", "#5E5CE6", "#64D2FF", "#8E8E93", "#C7C7CC", "#FFD60A", "#BF5AF2"];
-function catColor(c) { return CAT_COLORS[c] || "#C7C7CC"; }
+let customColorMap = {};
+let builtinCats = [];
+function catColor(c) {
+  return CAT_COLORS[c] || customColorMap[c] ||
+    PALETTE[(c.length * 7 + (c.charCodeAt(0) || 0)) % PALETTE.length];
+}
 function iconColor(name) {
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -253,9 +257,7 @@ async function loadDetail(app) {
   const d = await rpc("appdetail", { app });
   document.getElementById("md-name").textContent = d.name;
   const catSel = document.getElementById("md-cat-select");
-  catSel.innerHTML = '<option value="自动">分类：自动识别（内置规则）</option>' +
-    (d.categories || []).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-  catSel.value = d.customCategory ? d.category : "自动";
+  fillCatSelect(d.customCategory ? d.category : "自动");
   catSel.onchange = async () => {
     await rpc("setcategory", { app: d.app, category: catSel.value === "自动" ? null : catSel.value });
     loadAll();
@@ -358,7 +360,62 @@ document.getElementById("limit-add").addEventListener("click", async () => {
   loadSettings();
 });
 
+/* ---------- 自定义分类 ---------- */
+function fillCatSelect(value) {
+  const sel = document.getElementById("md-cat-select");
+  sel.innerHTML = '<option value="自动">分类：自动识别（内置规则）</option>'
+    + builtinCats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("")
+    + Object.keys(customColorMap).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  sel.value = value;
+}
+async function loadCategories() {
+  const d = await rpc("categories");
+  builtinCats = d.builtin || [];
+  customColorMap = {};
+  (d.custom || []).forEach(c => customColorMap[c.name] = c.color);
+  const cur = document.getElementById("md-cat-select").value;
+  fillCatSelect(cur || "自动");
+  const list = document.getElementById("cats-list");
+  const custom = d.custom || [];
+  list.innerHTML = custom.length
+    ? custom.map(c => `
+      <div class="rank-item" style="cursor:default">
+        <span class="cat-dot" style="background:${esc(c.color)}"></span>
+        <div class="rank-main"><span class="rank-name">${esc(c.name)}</span></div>
+        <a class="link" data-cat="${esc(c.name)}">删除</a>
+      </div>`).join("")
+    : '<div class="empty">暂无自定义分类</div>';
+  list.querySelectorAll("a.link").forEach(el =>
+    el.addEventListener("click", async () => {
+      if (!confirm(`删除分类「${el.dataset.cat}」？使用它的应用将回退为自动分类。`)) return;
+      await rpc("delcategory", { name: el.dataset.cat });
+      await loadCategories();
+      loadAll();
+    }));
+}
+async function addCategory(name, applyApp) {
+  if (!name) { alert("请输入分类名称"); return false; }
+  const r = await rpc("addcategory", { name });
+  if (!r || !r.ok) { alert(r && r.error || "创建失败"); return false; }
+  if (applyApp) await rpc("setcategory", { app: applyApp, category: name });
+  await loadCategories();
+  loadAll();
+  return true;
+}
+document.getElementById("md-addcat").addEventListener("click", async () => {
+  if (!detailApp) return;
+  const input = document.getElementById("md-newcat");
+  if (await addCategory(input.value.trim(), detailApp)) input.value = "";
+});
+document.getElementById("add-cat-btn").addEventListener("click", async () => {
+  const input = document.getElementById("new-cat-name");
+  if (await addCategory(input.value.trim(), null)) input.value = "";
+});
+
 /* ---------- 启动 ---------- */
-loadAll();
-loadLive();
-setInterval(loadLive, 3000);
+(async () => {
+  await loadCategories();
+  loadAll();
+  loadLive();
+  setInterval(loadLive, 3000);
+})();
