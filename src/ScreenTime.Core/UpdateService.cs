@@ -18,6 +18,9 @@ public static class UpdateService
     private const string ReleasesApi = "https://api.github.com/repos/" + Repo + "/releases/latest";
     private const string AssetPrefix = "Windows-ScreenTime_Setup";
 
+    /// <summary>GitHub 下载加速镜像（国内网络下优先使用，失败自动回退 API 资产端点与直链）。</summary>
+    private const string MirrorPrefix = "https://gh.inkchills.cn/";
+
     /// <summary>更新流程末尾由宿主设置：退出当前进程（安装器会重新拉起新版本）。</summary>
     public static Action? ExitHost;
 
@@ -28,7 +31,7 @@ public static class UpdateService
     public static event Action<bool>? Finished;
 
     /// <summary>检查 GitHub 上的最新版本。返回 hasUpdate=false 时 Latest 仍为最新版本号。</summary>
-    public static async Task<(bool HasUpdate, string Latest, string? Notes, string? Url)> CheckAsync()
+    public static async Task<(bool HasUpdate, string Latest, string? Notes, string? Url, long AssetId)> CheckAsync()
     {
         using var http = new HttpClient();
         http.Timeout = TimeSpan.FromSeconds(10);
@@ -42,6 +45,7 @@ public static class UpdateService
         var latest = tag.TrimStart('v', 'V');
 
         string? url = null;
+        long assetId = 0;
         if (json.RootElement.TryGetProperty("assets", out var assets))
         {
             foreach (var asset in assets.EnumerateArray())
@@ -51,6 +55,7 @@ public static class UpdateService
                     name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                 {
                     url = asset.GetProperty("browser_download_url").GetString();
+                    assetId = asset.GetProperty("id").GetInt64();
                     break;
                 }
             }
@@ -64,10 +69,10 @@ public static class UpdateService
             var current = Assembly.GetEntryAssembly()?.GetName().Version;
             hasUpdate = current is null || latestVer > current;
         }
-        return (hasUpdate, latest, notes, url);
+        return (hasUpdate, latest, notes, url, assetId);
     }
 
-    public static async Task DownloadAndInstallAsync(string url)
+    public static async Task DownloadAndInstallAsync(string url, long assetId = 0)
     {
         if (IsBusy) return;
         IsBusy = true;
@@ -76,32 +81,20 @@ public static class UpdateService
             StageChanged?.Invoke("正在下载更新…");
             var temp = Path.Combine(Path.GetTempPath(), $"ScreenTime_Setup_{Guid.NewGuid():N}.exe");
 
-            using var http = new HttpClient();
-            http.Timeout = TimeSpan.FromMinutes(15);
-            using var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-            resp.EnsureSuccessStatusCode();
-            var total = resp.Content.Headers.ContentLength ?? -1;
-
-            await using var src = await resp.Content.ReadAsStreamAsync();
-            await using var file = File.Create(temp);
-            var buffer = new byte[81920];
-            long received = 0;
-            int lastPct = -1;
-            int read;
-            while ((read = await src.ReadAsync(buffer)) > 0)
+            // 三级回退：镜像 → api.github.com 资产端点 → 直链
+            bool ok = false;
+            if (url is not null)
             {
-                await file.WriteAsync(buffer.AsMemory(0, read));
-                received += read;
-                if (total > 0)
-                {
-                    var pct = (int)(received * 100 / total);
-                    if (pct != lastPct)
-                    {
-                        lastPct = pct;
-                        DownloadProgress?.Invoke(pct);
-                    }
-                }
+                try { ok = await DownloadToAsync(MirrorPrefix + url, temp, octetStream: false); }
+                catch (Exception ex) { UsageTracker.Logger?.Invoke("镜像下载失败: " + ex.Message); }
             }
+            if (!ok && assetId > 0)
+            {
+                try { ok = await DownloadToAsync($"https://api.github.com/repos/{Repo}/releases/assets/{assetId}", temp, octetStream: true); }
+                catch (Exception ex) { UsageTracker.Logger?.Invoke("API资产下载失败: " + ex.Message); }
+            }
+            if (!ok && url is not null) ok = await DownloadToAsync(url, temp, octetStream: false);
+            if (!ok) throw new IOException("下载更新失败");
 
             StageChanged?.Invoke("正在安装更新，应用即将自动重启…");
             using var installer = Process.Start(new ProcessStartInfo
@@ -124,5 +117,39 @@ public static class UpdateService
         {
             IsBusy = false;
         }
+    }
+
+    private static async Task<bool> DownloadToAsync(string url, string destPath, bool octetStream)
+    {
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromMinutes(15);
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("Windows-ScreenTime");
+        if (octetStream) http.DefaultRequestHeaders.Accept.ParseAdd("application/octet-stream");
+
+        using var resp = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        if (!resp.IsSuccessStatusCode) return false;
+        var total = resp.Content.Headers.ContentLength ?? -1;
+
+        await using var src = await resp.Content.ReadAsStreamAsync();
+        await using var file = File.Create(destPath);
+        var buffer = new byte[81920];
+        long received = 0;
+        int lastPct = -1;
+        int read;
+        while ((read = await src.ReadAsync(buffer)) > 0)
+        {
+            await file.WriteAsync(buffer.AsMemory(0, read));
+            received += read;
+            if (total > 0)
+            {
+                var pct = (int)(received * 100 / total);
+                if (pct != lastPct)
+                {
+                    lastPct = pct;
+                    DownloadProgress?.Invoke(pct);
+                }
+            }
+        }
+        return true;
     }
 }
