@@ -17,9 +17,9 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Windows屏幕使用时间</AssemblyName>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>1.4.1</Version>
-    <FileVersion>1.4.1.0</FileVersion>
-    <AssemblyVersion>1.4.1.0</AssemblyVersion>
+    <Version>1.4.2</Version>
+    <FileVersion>1.4.2.0</FileVersion>
+    <AssemblyVersion>1.4.2.0</AssemblyVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Authors>kbcrt</Authors>
     <Company>kbcrt</Company>

@@ -96,6 +96,7 @@ const CAT_COLORS = {
   "办公": "#30D158", "开发": "#5E5CE6", "浏览器": "#64D2FF",
   "系统": "#8E8E93", "其他": "#C7C7CC",
 };
+const PALETTE = ["#0A84FF", "#FF9F0A", "#FF375F", "#30D158", "#5E5CE6", "#64D2FF", "#8E8E93", "#C7C7CC", "#FFD60A", "#BF5AF2"];
 let customColorMap = {};
 let builtinCats = [];
 function catColor(c) {
