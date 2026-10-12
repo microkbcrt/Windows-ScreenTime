@@ -20,6 +20,7 @@
     <Version>1.2.0</Version>
     <FileVersion>1.2.0.0</FileVersion>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Authors>kbcrt</Authors>
     <Company>kbcrt</Company>
     <Product>Windows屏幕使用时间</Product>
