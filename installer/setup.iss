@@ -2,7 +2,7 @@
 ; 编译：ISCC.exe installer\setup.iss → 产物 dist\Windows屏幕使用时间_Setup_<版本>.exe
 
 #define MyAppName "Windows屏幕使用时间"
-#define MyAppVersion "1.5.0"
+#define MyAppVersion "1.5.1"
 #define MyAppPublisher "kbcrt"
 #define MyAppExeName "Windows屏幕使用时间.exe"
 

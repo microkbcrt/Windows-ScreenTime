@@ -149,18 +149,20 @@ public partial class App : Application
 
     private void ShowMain()
     {
-        var win = MainWindow;
-        if (win is null)
+        foreach (var w in Windows)
         {
-            win = new MainWindow();
-            win.Show();
+            if (w is MainWindow mw && mw.IsLoaded)
+            {
+                mw.Show();
+                if (mw.WindowState == WindowState.Minimized)
+                    mw.WindowState = WindowState.Normal;
+                mw.Activate();
+                return;
+            }
         }
-        else
-        {
-            win.Show();
-            win.WindowState = WindowState.Normal;
-            win.Activate();
-        }
+        var win = new MainWindow();
+        win.Show();
+        win.Activate();
     }
 
     private void ExitApp()
