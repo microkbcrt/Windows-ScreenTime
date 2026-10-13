@@ -18,8 +18,12 @@ public static class UpdateService
     private const string ReleasesApi = "https://api.github.com/repos/" + Repo + "/releases/latest";
     private const string AssetPrefix = "Windows-ScreenTime_Setup";
 
-    /// <summary>GitHub 下载加速镜像（国内网络下优先使用，失败自动回退 API 资产端点与直链）。</summary>
-    private const string MirrorPrefix = "https://gh.inkchills.cn/";
+    /// <summary>GitHub 下载加速镜像（按顺序尝试，全部失败再回退 API 资产端点与直链）。</summary>
+    private static readonly string[] MirrorPrefixes =
+    {
+        "https://gh.jjj.gv.uy/",
+        "https://gh.inkchills.cn/",
+    };
 
     /// <summary>更新流程末尾由宿主设置：退出当前进程（安装器会重新拉起新版本）。</summary>
     public static Action? ExitHost;
@@ -81,12 +85,20 @@ public static class UpdateService
             StageChanged?.Invoke("正在下载更新…");
             var temp = Path.Combine(Path.GetTempPath(), $"ScreenTime_Setup_{Guid.NewGuid():N}.exe");
 
-            // 三级回退：镜像 → api.github.com 资产端点 → 直链
+            // 多级回退：镜像（按序） → api.github.com 资产端点 → 直链
             bool ok = false;
             if (url is not null)
             {
-                try { ok = await DownloadToAsync(MirrorPrefix + url, temp, octetStream: false); }
-                catch (Exception ex) { UsageTracker.Logger?.Invoke("镜像下载失败: " + ex.Message); }
+                foreach (var mirror in MirrorPrefixes)
+                {
+                    try
+                    {
+                        ok = await DownloadToAsync(mirror + url, temp, octetStream: false);
+                        if (ok) break;
+                        UsageTracker.Logger?.Invoke("镜像不可用: " + mirror);
+                    }
+                    catch (Exception ex) { UsageTracker.Logger?.Invoke("镜像下载失败(" + mirror + "): " + ex.Message); }
+                }
             }
             if (!ok && assetId > 0)
             {
