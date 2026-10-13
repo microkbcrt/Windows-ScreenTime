@@ -153,4 +153,4 @@ dotnet run --project src/ScreenTime.Cli -c Release -- updatetest
 
 ## License
 
-MIT
+[MIT License](LICENSE) · [Third-party notices](THIRD-PARTY-NOTICES.md)
