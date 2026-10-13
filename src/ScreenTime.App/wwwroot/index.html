@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <title>屏幕使用时间</title>
+<link rel="stylesheet" href="bootstrap.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <aside id="nav">
     <div class="logo">
-      <div class="logo-icon">⏱</div>
+      <div class="logo-icon"></div>
       <div class="logo-text">屏幕使用时间</div>
     </div>
     <nav>
-      <a data-view="dashboard" class="active"><span class="ico">📊</span>今日概览</a>
-      <a data-view="apps"><span class="ico">📱</span>应用统计</a>
-      <a data-view="settings"><span class="ico">⚙️</span>设置</a>
+      <a data-view="dashboard" class="active">今日概览</a>
+      <a data-view="apps">应用统计</a>
+      <a data-view="settings">设置</a>
     </nav>
     <div id="live-bar">
       <span id="live-dot" class="dot on"></span>
@@ -91,21 +92,13 @@
     <!-- 设置 -->
     <section id="view-settings" hidden>
       <div class="card set-card">
-        <div class="card-title">自定义分类</div>
-        <div class="set-row">
-          <input id="new-cat-name" placeholder="新分类名称（如：学习、理财）" maxlength="12" style="flex:1">
-          <button class="btn" id="add-cat-btn">新建</button>
-        </div>
-        <div id="cats-list" class="rank-list" style="max-height:none"></div>
-      </div>
-      <div class="card set-card">
         <div class="card-title">常规</div>
         <div class="set-row">
           <div>
             <div class="set-name">离开判定阈值</div>
             <div class="sub">键鼠无操作超过该时间即停止计时</div>
           </div>
-          <select id="idle-select">
+          <select id="idle-select" class="form-select form-select-sm">
             <option value="30">30 秒</option>
             <option value="60" selected>60 秒</option>
             <option value="120">2 分钟</option>
@@ -117,51 +110,71 @@
             <div class="set-name">开机自动启动</div>
             <div class="sub">登录 Windows 后自动开始记录</div>
           </div>
-          <label class="switch"><input type="checkbox" id="autostart"><span class="slider"></span></label>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="autostart">
+          </div>
         </div>
+      </div>
+
+      <div class="card set-card">
+        <div class="card-title">关于</div>
         <div class="set-row">
           <div>
-            <div class="set-name">数据备份</div>
+            <div class="set-name">版本与更新</div>
+            <div class="sub" id="about">—</div>
+          </div>
+          <button class="btn btn-outline-secondary btn-sm" id="check-update-btn">检查更新</button>
+        </div>
+      </div>
+
+      <div class="card set-card">
+        <div class="card-title">自定义分类</div>
+        <div class="set-row cat-add-row">
+          <input id="new-cat-name" class="form-control form-control-sm" placeholder="新分类名称（如：学习、理财）" maxlength="12">
+          <button class="btn btn-primary btn-sm" id="add-cat-btn">新建</button>
+        </div>
+        <div id="cats-list" class="rank-list" style="max-height:none"></div>
+      </div>
+
+      <div class="card set-card">
+        <div class="card-title">应用限额（每日）</div>
+        <div class="limit-add-row">
+          <select id="limit-app" class="form-select form-select-sm"><option value="">选择应用…</option></select>
+          <input id="limit-minutes" class="form-control form-control-sm" type="number" min="1" max="1440" placeholder="分钟">
+          <button class="btn btn-primary btn-sm" id="limit-add">设置限额</button>
+        </div>
+        <table id="limits-table">
+          <thead><tr><th>应用</th><th style="width:130px">每日限额</th><th style="width:64px"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card set-card wide">
+        <div class="card-title">数据</div>
+        <div class="set-row">
+          <div>
+            <div class="set-name">备份与恢复</div>
             <div class="sub">导出全部数据为备份文件，或从备份恢复（恢复后应用自动重启）</div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn ghost" id="exportdata-btn">导出数据</button>
-            <button class="btn" id="importdata-btn">导入数据</button>
+          <div class="ctl-group">
+            <button class="btn btn-outline-secondary btn-sm" id="exportdata-btn">导出备份</button>
+            <button class="btn btn-primary btn-sm" id="importdata-btn">导入备份</button>
           </div>
         </div>
         <div class="set-row">
           <div>
-            <div class="set-name">导出数据</div>
-            <div class="sub">最近 30 天明细导出为 CSV（桌面）</div>
+            <div class="set-name">导出 CSV</div>
+            <div class="sub">最近 30 天明细导出到桌面</div>
           </div>
-          <button class="btn" id="export-btn">导出 CSV</button>
+          <button class="btn btn-outline-secondary btn-sm" id="export-btn">导出 CSV</button>
         </div>
         <div class="set-row">
           <div>
             <div class="set-name">数据位置</div>
-            <div class="sub" id="datadir">—</div>
+            <div class="sub path" id="datadir">—</div>
           </div>
-          <button class="btn ghost" id="opendata-btn">打开文件夹</button>
+          <button class="btn btn-outline-secondary btn-sm" id="opendata-btn">打开文件夹</button>
         </div>
-        <div class="set-row">
-          <div>
-            <div class="set-name">关于</div>
-            <div class="sub" id="about">—</div>
-          </div>
-          <button class="btn ghost" id="check-update-btn">检查更新</button>
-        </div>
-      </div>
-      <div class="card set-card">
-        <div class="card-title">应用限额（每日）</div>
-        <div class="set-row">
-          <select id="limit-app"><option value="">选择应用…</option></select>
-          <input id="limit-minutes" type="number" min="1" max="1440" placeholder="分钟">
-          <button class="btn" id="limit-add">设置限额</button>
-        </div>
-        <table id="limits-table">
-          <thead><tr><th>应用</th><th>每日限额</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
       </div>
     </section>
   </main>
@@ -170,23 +183,58 @@
   <div id="modal" hidden>
     <div id="modal-box">
       <div class="modal-head">
-        <div>
-          <div id="md-name" class="md-title">—</div>
-          <select id="md-cat-select" style="margin-top:6px"></select>
+        <div class="modal-head-main">
+          <div class="rank-icon md-icon" id="md-icon" data-icon-app="">?</div>
+          <div class="modal-head-text">
+            <div id="md-name" class="md-title">—</div>
+            <div class="sub md-sub" id="md-sub">—</div>
+          </div>
         </div>
-        <button id="md-close" class="btn ghost">关闭</button>
+        <button id="md-close" class="btn btn-outline-secondary btn-sm">关闭</button>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <input id="md-newcat" placeholder="新建分类名称（如：学习）" maxlength="12" style="flex:1">
-        <button class="btn ghost" id="md-addcat">新建并应用</button>
-      </div>
-      <div id="md-trend" class="chart-box tall"></div>
-      <div class="card-title" style="margin-top:14px">今日访问的网站</div>
-      <div id="md-sites" class="rank-list"></div>
-      <div class="set-row" style="margin-top:10px;border-top:1px solid #eee;padding-top:12px">
-        <div class="set-name">每日限额（分钟，0 为取消）</div>
-        <input id="md-limit" type="number" min="0" max="1440" style="width:90px">
-        <button class="btn" id="md-limit-save">保存</button>
+
+      <div class="md-cols">
+        <div class="md-col">
+          <div class="md-section">
+            <div class="set-row">
+              <div>
+                <div class="set-name">分类</div>
+                <div class="sub">选择已有分类，或新建自定义分类并应用到当前应用</div>
+              </div>
+              <select id="md-cat-select" class="form-select form-select-sm"></select>
+            </div>
+            <div class="set-row">
+              <div class="set-name">新建分类</div>
+              <div class="ctl-group">
+                <input id="md-newcat" class="form-control form-control-sm" placeholder="名称（如：学习）" maxlength="12">
+                <button class="btn btn-outline-secondary btn-sm" id="md-addcat">新建并应用</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="md-section">
+            <div class="card-title">近 14 天趋势</div>
+            <div id="md-trend" class="chart-box tall"></div>
+          </div>
+
+          <div class="md-section">
+            <div class="set-row">
+              <div>
+                <div class="set-name">每日限额</div>
+                <div class="sub">单位分钟，0 为取消限额</div>
+              </div>
+              <div class="ctl-group">
+                <input id="md-limit" class="form-control form-control-sm" type="number" min="0" max="1440">
+                <button class="btn btn-primary btn-sm" id="md-limit-save">保存</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="md-col" id="md-sites-col">
+          <div class="card-title md-side-title">今日访问的网站</div>
+          <div id="md-sites" class="rank-list md-sites"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -197,8 +245,8 @@
       <div class="md-title">发现新版本 <span id="upd-ver" style="color:var(--accent)"></span></div>
       <div id="upd-notes" class="sub" style="white-space:pre-wrap;max-height:180px;overflow:auto;margin-top:10px;line-height:1.7"></div>
       <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
-        <button class="btn ghost" id="upd-later">以后再说</button>
-        <button class="btn" id="upd-go">立即更新</button>
+        <button class="btn btn-outline-secondary btn-sm" id="upd-later">以后再说</button>
+        <button class="btn btn-primary btn-sm" id="upd-go">立即更新</button>
       </div>
     </div>
   </div>

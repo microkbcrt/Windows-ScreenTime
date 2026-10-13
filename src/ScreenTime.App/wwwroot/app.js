@@ -121,12 +121,41 @@ function shortName(name) {
 /* ---------- 图表 ---------- */
 const charts = {};
 function chart(id) {
-  if (!charts[id]) charts[id] = echarts.init(document.getElementById(id), null, { renderer: "canvas" });
+  if (!charts[id]) {
+    const el = document.getElementById(id);
+    const inst = echarts.init(el, null, { renderer: "canvas" });
+    charts[id] = inst;
+    // 容器尺寸变化（含隐藏→显示、窗口最大化）时重算画布，防止图表被挤压
+    const ro = new ResizeObserver(() => {
+      if (el.offsetParent !== null) inst.resize();
+    });
+    ro.observe(el);
+  }
   return charts[id];
 }
-window.addEventListener("resize", () => Object.values(charts).forEach(c => c.resize()));
+window.addEventListener("resize", () => {
+  Object.values(charts).forEach(c => {
+    if (c.getDom().offsetParent !== null) c.resize();
+  });
+  fitSitesHeight();
+});
 
 const GRID = { left: 34, right: 14, top: 26, bottom: 26 };
+
+/* 估算 ECharts 图例行数（图标宽 25 + 间距 10，字号 11），用于动态预留向下空间 */
+function estimateLegendRows(names, boxWidth) {
+  const ctx = document.createElement("canvas").getContext("2d");
+  ctx.font = '11px "Segoe UI", "Microsoft YaHei", sans-serif';
+  const itemW = 25, itemGap = 10;
+  boxWidth = boxWidth || 400;
+  let rows = 1, x = 0;
+  for (const name of names) {
+    const w = itemW + ctx.measureText(name).width + itemGap;
+    if (x > 0 && x + w > boxWidth) { rows++; x = w; }
+    else x += w;
+  }
+  return rows;
+}
 
 /* ---------- 数据加载 ---------- */
 let currentView = "dashboard";
@@ -188,11 +217,15 @@ async function loadDashboard() {
   for (const r of totals.rows) catMap[r.category] = (catMap[r.category] || 0) + r.seconds;
   const catData = Object.entries(catMap).map(([k, v]) => ({ name: k, value: Math.round(v) }))
     .sort((a, b) => b.value - a.value);
+  // 图例多行时按实际行数动态加高容器向下展开，防止挤入圆环
+  const catBox = document.getElementById("cat");
+  const legendRows = estimateLegendRows(catData.map(x => x.name), catBox.clientWidth);
+  catBox.style.height = (202 + legendRows * 18) + "px";
   chart("cat").setOption({
     tooltip: { trigger: "item", valueFormatter: v => fmtDur(v) },
-    legend: { bottom: 0, icon: "circle", textStyle: { fontSize: 11 } },
+    legend: { bottom: 0, icon: "circle", itemWidth: 25, textStyle: { fontSize: 11 } },
     series: [{
-      type: "pie", radius: ["48%", "72%"], center: ["50%", "44%"],
+      type: "pie", radius: [53, 79], center: ["50%", 97],
       label: { show: false },
       data: catData.map(x => ({ ...x, itemStyle: { color: catColor(x.name) } })),
     }],
@@ -232,8 +265,9 @@ async function loadApps() {
         <div class="rank-icon" data-icon-app="${esc(r.app)}" style="background:${iconColor(r.name)}">${esc(shortName(r.name))}</div>${esc(r.name)}</div></td>
       <td><span class="cat-tag" style="color:${catColor(r.category)}">${esc(r.category)}</span></td>
       <td><b>${fmtDur(r.seconds)}</b></td>
-      <td><div class="pct-track"><div class="pct-fill" style="width:${Math.max(2, r.seconds / max * 100)}%"></div></div>
-          <span class="sub" style="margin-top:3px;display:inline-block">${r.percent}%</span></td>
+      <td><div class="pct-cell">
+        <div class="pct-track"><div class="pct-fill" style="width:${Math.max(2, r.seconds / max * 100)}%"></div></div>
+        <span class="pct-num">${r.percent}%</span></div></td>
       <td>${r.limitMinutes ? `<span class="cat-tag" style="color:#FF9F0A">${r.limitMinutes} 分钟/天</span> ` : ""}<a class="link" data-app="${esc(r.app)}">详情 / 限额</a></td>
     </tr>`).join("");
   tbody.querySelectorAll("a.link").forEach(el =>
@@ -297,6 +331,11 @@ async function loadSettings() {
 async function loadDetail(app) {
   const d = await rpc("appdetail", { app });
   document.getElementById("md-name").textContent = d.name;
+  document.getElementById("md-sub").textContent = d.app;
+  const iconEl = document.getElementById("md-icon");
+  iconEl.dataset.iconApp = d.app;
+  iconEl.style.background = iconColor(d.name);
+  iconEl.textContent = shortName(d.name);
   const catSel = document.getElementById("md-cat-select");
   fillCatSelect(d.customCategory ? d.category : "自动");
   catSel.onchange = async () => {
@@ -311,8 +350,13 @@ async function loadDetail(app) {
     yAxis: { type: "value", axisLabel: { fontSize: 10, formatter: v => Math.round(v / 60) + "分" } },
     series: [{ type: "bar", data: d.trend.map(t => t.seconds), itemStyle: { color: "#0A84FF", borderRadius: [4, 4, 0, 0] } }],
   });
+  // 仅浏览器分类的应用显示网站列；其余应用隐藏并收窄为紧凑单栏
+  const isBrowser = d.category === "浏览器";
+  document.getElementById("md-sites-col").hidden = !isBrowser;
+  document.getElementById("modal-box").classList.toggle("solo", !isBrowser);
   const sites = document.getElementById("md-sites");
-  sites.innerHTML = d.sites.length
+  sites.innerHTML = !isBrowser ? ""
+    : d.sites.length
     ? d.sites.map((s, i) => `
       <div class="rank-item" style="cursor:default">
         <div class="rank-icon" style="background:${catColor("浏览器")}">${i + 1}</div>
@@ -321,7 +365,20 @@ async function loadDetail(app) {
           <span class="rank-time">${fmtDur(s.seconds)}</span></div>
         </div>
       </div>`).join("")
-    : '<div class="empty">今天没有网站级记录（仅浏览器有网站统计）</div>';
+    : '<div class="empty">今天没有网站级记录</div>';
+  requestAnimationFrame(fitSitesHeight);
+  requestIcons(document.getElementById("modal-box"));
+}
+
+/* 网站列表高度对齐详情弹窗左栏底部（内部滚动） */
+function fitSitesHeight() {
+  const col = document.getElementById("md-sites-col");
+  const sites = document.getElementById("md-sites");
+  const left = document.querySelector(".md-cols .md-col:first-child");
+  if (!col || !sites || !left || col.hidden) return;
+  const title = sites.previousElementSibling;
+  const mt = parseFloat(getComputedStyle(sites).marginTop) || 0;
+  sites.style.maxHeight = Math.max(120, left.offsetHeight - title.offsetHeight - mt) + "px";
 }
 
 /* ---------- 弹窗 ---------- */
@@ -404,7 +461,7 @@ document.getElementById("limit-add").addEventListener("click", async () => {
 /* ---------- 自定义分类 ---------- */
 function fillCatSelect(value) {
   const sel = document.getElementById("md-cat-select");
-  sel.innerHTML = '<option value="自动">分类：自动识别（内置规则）</option>'
+  sel.innerHTML = '<option value="自动">自动（内置规则）</option>'
     + builtinCats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("")
     + Object.keys(customColorMap).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
   sel.value = value;
