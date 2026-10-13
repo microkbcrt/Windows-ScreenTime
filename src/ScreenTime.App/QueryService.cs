@@ -32,6 +32,7 @@ internal static class QueryService
         "importdata" => ImportData(args),
         "restart" => Restart(),
         "checkupdate" => CheckUpdate(),
+        "pendingupdate" => PendingUpdate(),
         "doupdate" => DoUpdate(),
         "opendata" => OpenData(),
         "live" => Live(),
@@ -103,6 +104,15 @@ internal static class QueryService
             }
         });
         return new { ok = true };
+    }
+
+    /// <summary>前端加载后主动拉取启动检查结果，避免推送早于页面就绪而丢失。</summary>
+    private static object? PendingUpdate()
+    {
+        var p = App.PendingUpdate;
+        if (p is null) return null;
+        App.PendingUpdate = null;
+        return new { hasUpdate = true, version = p.Value.Latest, notes = p.Value.Notes };
     }
 
     private static object DoUpdate()

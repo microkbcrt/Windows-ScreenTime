@@ -79,6 +79,10 @@ document.getElementById("upd-go").addEventListener("click", async () => {
 document.getElementById("check-update-btn").addEventListener("click", () => {
   rpc("checkupdate");
 });
+/* 启动检查结果由前端加载后主动拉取，避免推送早于页面就绪而丢失 */
+rpc("pendingupdate").then((p) => {
+  if (p && p.version) showUpdateModal(p.version, p.notes);
+});
 document.getElementById("opendata-btn").addEventListener("click", () => {
   rpc("opendata");
 });

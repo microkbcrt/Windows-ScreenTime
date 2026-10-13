@@ -1,7 +1,7 @@
 # Windows屏幕使用时间
 
 > 对标手机端「屏幕使用时间」的 Windows 桌面软件
-> 作者：**kbcrt**　|　当前版本：**1.5.1**　|　技术栈：C# .NET 8 + WPF + WebView2 + SQLite
+> 作者：**kbcrt**　|　当前版本：**1.5.2**　|　技术栈：C# .NET 8 + WPF + WebView2 + SQLite
 > 开源仓库：https://github.com/microkbcrt/Windows-ScreenTime
 
 ## 项目信息
@@ -66,6 +66,7 @@ Copy-Item src/ScreenTime.App/wwwroot/* installer/publish/wwwroot -Recurse -Force
 
 ## 更新日志
 
+- 1.5.2 (2026-10-13): 修复启动时自动检查更新可能不弹窗的问题（前端未就绪时推送消息丢失，改为前端加载后主动拉取暂存结果；启动检查失败自动重试三次并写日志，不再静默）。
 - 1.5.1 (2026-10-13): 修复主窗口关闭后从托盘打开仪表盘崩溃的问题（复用已关闭窗口实例导致 WPF VisualTarget 根 Visual 异常，改为查找未关闭实例激活或新建）。
 - 1.5.0 (2026-10-12): 应用排行与统计表显示真实应用图标（从 exe 提取，磁盘缓存于 %LOCALAPPDATA%\ScreenTime\icons，提取失败回退字母图标）。
 - 1.4.2 (2026-10-12): 修复前端调色板常量缺失导致仪表盘图表与应用排行无法渲染的问题（1.4.0 引入的回归，由新增的异常上报捕获定位）。

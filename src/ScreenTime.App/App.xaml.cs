@@ -13,6 +13,9 @@ public partial class App : Application
     public static UsageTracker Tracker { get; private set; } = null!;
     public static bool Exiting { get; private set; }
 
+    /// <summary>启动检查发现的新版本（前端未就绪时暂存，页面加载后主动拉取）。</summary>
+    public static (string Latest, string? Notes, string? Url, long AssetId)? PendingUpdate { get; set; }
+
     /// <summary>后台推送到前端的消息通道（更新进度、检查结果等）。</summary>
     public static event Action<object>? FrontendPush;
 
@@ -72,17 +75,28 @@ public partial class App : Application
             new MainWindow().Show();
         }
 
-        // 启动时检查更新（延迟几秒，避免抢占启动）
+        // 启动时检查更新（延迟几秒，避免抢占启动；网络不稳时重试并记录日志）
         _ = Task.Run(async () =>
         {
-            try
+            for (var attempt = 1; ; attempt++)
             {
-                await Task.Delay(5000);
-                var info = await UpdateService.CheckAsync();
-                if (info.HasUpdate)
-                    PushToFrontend(new { type = "update-available", version = info.Latest, notes = info.Notes });
+                await Task.Delay(attempt == 1 ? 5000 : 30000);
+                try
+                {
+                    var info = await UpdateService.CheckAsync();
+                    if (info.HasUpdate)
+                    {
+                        PendingUpdate = (info.Latest, info.Notes, info.Url, info.AssetId);
+                        PushToFrontend(new { type = "update-available", version = info.Latest, notes = info.Notes });
+                    }
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write($"启动检查更新失败(第{attempt}次): {ex.Message}");
+                    if (attempt >= 3) return;
+                }
             }
-            catch { /* 网络不可达时静默跳过，下次启动再查 */ }
         });
     }
 
